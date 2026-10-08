@@ -1,0 +1,19 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: system-ui, Arial, sans-serif; background: #0f172a; color: #e2e8f0; }
+header { text-align: center; padding: 2rem 1rem; background: #1e293b; }
+header p { color: #94a3b8; margin-top: .4rem; }
+main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; display: grid; gap: 1.5rem; }
+.card { background: #1e293b; border-radius: 12px; padding: 1.5rem; }
+.card h2 { margin-bottom: 1rem; font-size: 1.1rem; color: #38bdf8; }
+ul { list-style: none; }
+li { padding: .35rem 0; border-bottom: 1px solid #334155; }
+li:last-child { border-bottom: none; }
+.pipeline { display: flex; flex-wrap: wrap; gap: .75rem; }
+.stage { flex: 1 1 150px; padding: 1rem; border-radius: 10px; background: #0f172a; border: 2px solid #475569; }
+.stage.done { border-color: #22c55e; }
+.stage small { display: block; color: #94a3b8; margin-top: .3rem; }
+.badge { display: inline-block; margin-top: .5rem; font-size: .75rem; padding: .15rem .5rem; border-radius: 99px; background: #475569; }
+.stage.done .badge { background: #22c55e; color: #052e16; }
+button { background: #38bdf8; color: #082f49; border: 0; padding: .6rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+button:hover { background: #7dd3fc; }
+#healthResult { margin-top: 1rem; font-family: monospace; }

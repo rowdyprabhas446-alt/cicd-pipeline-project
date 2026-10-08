@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CI/CD Pipeline Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Multi-Stage Automated CI/CD Pipeline</h1>
+    <p>Orchestration Architecture Demo</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Application Info</h2>
+      <ul id="info"><li>Loading...</li></ul>
+    </section>
+
+    <section class="card">
+      <h2>Pipeline Stages</h2>
+      <div id="pipeline" class="pipeline"></div>
+    </section>
+
+    <section class="card">
+      <h2>Health Check</h2>
+      <button id="healthBtn">Check /health</button>
+      <p id="healthResult"></p>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
