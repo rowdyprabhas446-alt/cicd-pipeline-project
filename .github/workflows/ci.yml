@@ -46,7 +46,7 @@ jobs:
             -X POST "$APP_URL/api/pipeline/status" \
             -H "Authorization: Bearer $PIPELINE_STATUS_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "{\"stages\":[\"done\",\"pending\",\"$CI_STATUS\",\"pending\",\"pending\"]}"
+            -d "{\"stages\":[{\"stage\":1,\"status\":\"done\"},{\"stage\":2,\"status\":\"pending\"},{\"stage\":3,\"status\":\"$CI_STATUS\"},{\"stage\":4,\"status\":\"pending\"},{\"stage\":5,\"status\":\"pending\"}]}"
 
   deploy:
     needs: test
@@ -91,7 +91,7 @@ jobs:
             -X POST "$APP_URL/api/pipeline/status" \
             -H "Authorization: Bearer $PIPELINE_STATUS_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "{\"stages\":[\"done\",\"$CONTAINER_STATUS\",\"done\",\"$REGISTRY_STATUS\",\"pending\"]}"
+            -d "{\"stages\":[{\"stage\":1,\"status\":\"done\"},{\"stage\":2,\"status\":\"$CONTAINER_STATUS\"},{\"stage\":3,\"status\":\"done\"},{\"stage\":4,\"status\":\"$REGISTRY_STATUS\"},{\"stage\":5,\"status\":\"pending\"}]}"
 
       - name: Trigger Render deployment
         id: trigger_render
@@ -136,7 +136,7 @@ jobs:
             -X POST "$APP_URL/api/pipeline/status" \
             -H "Authorization: Bearer $PIPELINE_STATUS_TOKEN" \
             -H "Content-Type: application/json" \
-            -d '{"stages":["done","done","done","done","done"]}'
+            -d '{"stages":[{"stage":1,"status":"done"},{"stage":2,"status":"done"},{"stage":3,"status":"done"},{"stage":4,"status":"done"},{"stage":5,"status":"done"}]}'
 
       - name: Mark cloud deployment as failed
         if: steps.health_check.outcome == 'failure'
@@ -149,4 +149,4 @@ jobs:
             -X POST "$APP_URL/api/pipeline/status" \
             -H "Authorization: Bearer $PIPELINE_STATUS_TOKEN" \
             -H "Content-Type: application/json" \
-            -d '{"stages":["done","done","done","done","failed"]}'
+            -d '{"stages":[{"stage":1,"status":"done"},{"stage":2,"status":"done"},{"stage":3,"status":"done"},{"stage":4,"status":"done"},{"stage":5,"status":"failed"}]}'
