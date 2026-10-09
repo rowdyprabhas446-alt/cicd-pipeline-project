@@ -150,4 +150,3 @@ jobs:
             -H "Authorization: Bearer $PIPELINE_STATUS_TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"stages":["done","done","done","done","failed"]}'
-```
