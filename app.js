@@ -2,6 +2,7 @@
 const express = require('express');
 const os = require('os');
 const path = require('path');
+const { timingSafeEqual } = require('crypto');
 const { MongoClient } = require('mongodb');
 
 const app = express();
@@ -17,6 +18,7 @@ const defaultPipelineStages = [
   { stage: 5, name: 'Cloud Deployment', tool: 'Render', status: 'pending' }
 ];
 
+let memoryPipelineStages = defaultPipelineStages.map(stage => ({ ...stage }));
 let mongoClient;
 let pipelineCollection;
 
@@ -69,6 +71,10 @@ app.get('/api/info', (req, res) => {
 
 // Read pipeline status from MongoDB
 app.get('/api/pipeline', async (req, res) => {
+  if (!process.env.MONGODB_URI) {
+    return res.json(memoryPipelineStages);
+  }
+
   try {
     const collection = await getPipelineCollection();
     const document = await collection.findOne({ _id: 'current' });
@@ -80,6 +86,64 @@ app.get('/api/pipeline', async (req, res) => {
     res.status(503).json({
       error: 'Unable to read pipeline status from database'
     });
+  }
+});
+
+app.post('/api/deploy', async (req, res) => {
+  const deployToken = process.env.DEPLOY_TRIGGER_TOKEN;
+  const suppliedToken = req.get('Authorization')?.replace(/^Bearer\s+/i, '');
+  const githubToken = process.env.GITHUB_TOKEN;
+  const repository = process.env.GITHUB_REPOSITORY;
+
+  if (!deployToken || !suppliedToken || Buffer.byteLength(deployToken) < 32) {
+    return res.status(401).json({ error: 'A valid deployment access key is required' });
+  }
+
+  const expectedBuffer = Buffer.from(deployToken);
+  const suppliedBuffer = Buffer.from(suppliedToken);
+  if (
+    expectedBuffer.length !== suppliedBuffer.length ||
+    !timingSafeEqual(expectedBuffer, suppliedBuffer)
+  ) {
+    return res.status(401).json({ error: 'A valid deployment access key is required' });
+  }
+
+  if (!githubToken || !repository || !/^[\w.-]+\/[\w.-]+$/.test(repository)) {
+    return res.status(503).json({
+      error: 'Deployment is not configured. Set GITHUB_TOKEN and GITHUB_REPOSITORY on the server.'
+    });
+  }
+
+  const workflow = process.env.GITHUB_WORKFLOW_FILE || 'ci.yml';
+  const branch = process.env.GITHUB_DEPLOY_BRANCH || 'main';
+  const apiUrl = `https://api.github.com/repos/${repository}/actions/workflows/${encodeURIComponent(workflow)}/dispatches`;
+
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${githubToken}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ ref: branch })
+    });
+
+    if (!response.ok) {
+      console.error(`GitHub workflow dispatch failed with status ${response.status}`);
+      return res.status(502).json({
+        error: `GitHub rejected the deployment request (HTTP ${response.status}). Check the repository, workflow, branch, and token permissions.`
+      });
+    }
+
+    return res.status(202).json({
+      message: `Deployment workflow started for ${branch}.`,
+      workflowUrl: `https://github.com/${repository}/actions/workflows/${encodeURIComponent(workflow)}`
+    });
+  } catch (error) {
+    console.error('Unable to contact GitHub Actions:', error.message);
+    return res.status(502).json({ error: 'Unable to contact GitHub Actions' });
   }
 });
 
@@ -124,8 +188,6 @@ app.post('/api/pipeline/status', async (req, res) => {
   }
 
   try {
-    const collection = await getPipelineCollection();
-
     const updatedStages = defaultPipelineStages.map(stage => {
       const update = stages.find(
         item => item.stage === stage.stage
@@ -134,6 +196,15 @@ app.post('/api/pipeline/status', async (req, res) => {
       return { ...stage, status: update.status };
     });
 
+    if (!process.env.MONGODB_URI) {
+      memoryPipelineStages = updatedStages.map(stage => ({ ...stage }));
+      return res.json({
+        message: 'Pipeline status updated in memory',
+        stages: memoryPipelineStages
+      });
+    }
+
+    const collection = await getPipelineCollection();
     await collection.updateOne(
       { _id: 'current' },
       {
