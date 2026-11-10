@@ -2,7 +2,6 @@
 const express = require('express');
 const os = require('os');
 const path = require('path');
-const { timingSafeEqual } = require('crypto');
 const { MongoClient } = require('mongodb');
 
 const app = express();
@@ -32,10 +31,8 @@ async function getPipelineCollection() {
   }
 
   mongoClient = new MongoClient(uri);
-  console.log('Attempting MongoDB connection...');
   await mongoClient.connect();
-  console.log('MongoDB connected successfully!');
-  
+
   const db = mongoClient.db(
     process.env.MONGODB_DB || 'cicd_pipeline'
   );
@@ -72,6 +69,8 @@ app.get('/api/info', (req, res) => {
 });
 
 // Read pipeline status from MongoDB
+
+// Read pipeline status from MongoDB
 app.get('/api/pipeline', async (req, res) => {
   if (!process.env.MONGODB_URI) {
     return res.json(memoryPipelineStages);
@@ -81,73 +80,26 @@ app.get('/api/pipeline', async (req, res) => {
     const collection = await getPipelineCollection();
     const document = await collection.findOne({ _id: 'current' });
 
+    if (!document) {
+      return res.status(404).json({
+        error: 'Pipeline status document not found'
+      });
+    }
+
     res.json(document.stages);
   } catch (error) {
-    console.error('Failed to read pipeline status:', error);
+    console.error('MongoDB pipeline read error:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
 
-    res.status(503).json({
+    return res.status(503).json({
       error: 'Unable to read pipeline status from database'
     });
   }
 });
 
-app.post('/api/deploy', async (req, res) => {
-  const deployToken = process.env.DEPLOY_TRIGGER_TOKEN;
-  const suppliedToken = req.get('Authorization')?.replace(/^Bearer\s+/i, '');
-  const githubToken = process.env.GITHUB_TOKEN;
-  const repository = process.env.GITHUB_REPOSITORY;
-
-  if (!deployToken || !suppliedToken || Buffer.byteLength(deployToken) < 32) {
-    return res.status(401).json({ error: 'A valid deployment access key is required' });
-  }
-
-  const expectedBuffer = Buffer.from(deployToken);
-  const suppliedBuffer = Buffer.from(suppliedToken);
-  if (
-    expectedBuffer.length !== suppliedBuffer.length ||
-    !timingSafeEqual(expectedBuffer, suppliedBuffer)
-  ) {
-    return res.status(401).json({ error: 'A valid deployment access key is required' });
-  }
-
-  if (!githubToken || !repository || !/^[\w.-]+\/[\w.-]+$/.test(repository)) {
-    return res.status(503).json({
-      error: 'Deployment is not configured. Set GITHUB_TOKEN and GITHUB_REPOSITORY on the server.'
-    });
-  }
-
-  const workflow = process.env.GITHUB_WORKFLOW_FILE || 'ci.yml';
-  const branch = process.env.GITHUB_DEPLOY_BRANCH || 'main';
-  const apiUrl = `https://api.github.com/repos/${repository}/actions/workflows/${encodeURIComponent(workflow)}/dispatches`;
-
-  try {
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${githubToken}`,
-        'X-GitHub-Api-Version': '2022-11-28',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ ref: branch })
-    });
-
-    if (!response.ok) {
-      console.error(`GitHub workflow dispatch failed with status ${response.status}`);
-      return res.status(502).json({
-        error: `GitHub rejected the deployment request (HTTP ${response.status}). Check the repository, workflow, branch, and token permissions.`
-      });
-    }
-
-    return res.status(202).json({
-      message: `Deployment workflow started for ${branch}.`,
-      workflowUrl: `https://github.com/${repository}/actions/workflows/${encodeURIComponent(workflow)}`
-    });
-  } catch (error) {
-    console.error('Unable to contact GitHub Actions:', error.message);
-    return res.status(502).json({ error: 'Unable to contact GitHub Actions' });
-  }
-});
 
 // Protected endpoint for GitHub Actions
 app.post('/api/pipeline/status', async (req, res) => {
@@ -223,7 +175,7 @@ app.post('/api/pipeline/status', async (req, res) => {
       stages: updatedStages
     });
   } catch (error) {
-    console.error('Failed to read pipeline status:', error);
+    console.error('Failed to save pipeline status:', error.message);
 
     res.status(503).json({
       error: 'Unable to save pipeline status to database'
