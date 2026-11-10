@@ -30,8 +30,10 @@ async function getPipelineCollection() {
   }
 
   mongoClient = new MongoClient(uri);
+  console.log('Attempting MongoDB connection...');
   await mongoClient.connect();
-
+  console.log('MongoDB connected successfully!');
+  
   const db = mongoClient.db(
     process.env.MONGODB_DB || 'cicd_pipeline'
   );
