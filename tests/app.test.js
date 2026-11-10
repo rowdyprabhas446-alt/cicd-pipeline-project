@@ -52,3 +52,50 @@ describe('API endpoints', () => {
     expect(res.body).toHaveLength(5);
   });
 });
+
+describe('POST /api/deploy', () => {
+  const savedEnvironment = {};
+
+  beforeEach(() => {
+    ['DEPLOY_TRIGGER_TOKEN', 'GITHUB_TOKEN', 'GITHUB_REPOSITORY', 'GITHUB_DEPLOY_BRANCH'].forEach(key => {
+      savedEnvironment[key] = process.env[key];
+    });
+    process.env.DEPLOY_TRIGGER_TOKEN = 'test-deploy-token-with-at-least-32-chars';
+    process.env.GITHUB_TOKEN = 'test-github-token';
+    process.env.GITHUB_REPOSITORY = 'example/cicd-demo';
+    process.env.GITHUB_DEPLOY_BRANCH = 'main';
+  });
+
+  afterEach(() => {
+    Object.entries(savedEnvironment).forEach(([key, value]) => {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+      delete savedEnvironment[key];
+    });
+    jest.restoreAllMocks();
+  });
+
+  test('rejects requests without the deployment access key', async () => {
+    const res = await request(app).post('/api/deploy');
+
+    expect(res.statusCode).toBe(401);
+    expect(res.body.error).toMatch(/access key/i);
+  });
+
+  test('dispatches the configured GitHub Actions workflow', async () => {
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({ ok: true, status: 204 });
+    const res = await request(app)
+      .post('/api/deploy')
+      .set('Authorization', 'Bearer test-deploy-token-with-at-least-32-chars');
+
+    expect(res.statusCode).toBe(202);
+    expect(res.body.message).toMatch(/started for main/);
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://api.github.com/repos/example/cicd-demo/actions/workflows/ci.yml/dispatches',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ ref: 'main' })
+      })
+    );
+  });
+});

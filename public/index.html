@@ -7,28 +7,200 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>Multi-Stage Automated CI/CD Pipeline</h1>
-    <p>Orchestration Architecture Demo</p>
-  </header>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">CI</div>
+        <div>
+          <p class="brand-label">TeamOps</p>
+          <span>Platform</span>
+        </div>
+      </div>
 
-  <main>
-    <section class="card">
-      <h2>Application Info</h2>
-      <ul id="info"><li>Loading...</li></ul>
-    </section>
+      <nav class="nav">
+        <div class="nav-group open">
+          <button class="nav-item main-nav active" type="button">
+            <span>Overview</span>
+            <span class="nav-arrow">▾</span>
+          </button>
+          <div class="subnav">
+            <a href="#">Project summary</a>
+            <a href="#">Objectives</a>
+            <a href="#">Architecture</a>
+          </div>
+        </div>
 
-    <section class="card">
-      <h2>Pipeline Stages</h2>
-      <div id="pipeline" class="pipeline"></div>
-    </section>
+        <div class="nav-group">
+          <button class="nav-item main-nav" type="button">
+            <span>Pipelines</span>
+            <span class="nav-arrow">▸</span>
+          </button>
+          <div class="subnav">
+            <a href="#">Build pipeline</a>
+            <a href="#">Test pipeline</a>
+            <a href="#">Release pipeline</a>
+          </div>
+        </div>
 
-    <section class="card">
-      <h2>Health Check</h2>
-      <button id="healthBtn">Check /health</button>
-      <p id="healthResult"></p>
-    </section>
-  </main>
+        <div class="nav-group">
+          <button class="nav-item main-nav" type="button">
+            <span>Environments</span>
+            <span class="nav-arrow">▸</span>
+          </button>
+          <div class="subnav">
+            <a href="#">Development</a>
+            <a href="#">Staging</a>
+            <a href="#">Production</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <button class="nav-item main-nav" type="button">
+            <span>Deployments</span>
+            <span class="nav-arrow">▸</span>
+          </button>
+          <div class="subnav">
+            <a href="#">Latest release</a>
+            <a href="#">Rollback plans</a>
+            <a href="#">Version history</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <button class="nav-item main-nav" type="button">
+            <span>Monitoring</span>
+            <span class="nav-arrow">▸</span>
+          </button>
+          <div class="subnav">
+            <a href="#">Logs</a>
+            <a href="#">Alerts</a>
+            <a href="#">Performance</a>
+          </div>
+        </div>
+      </nav>
+
+      <div class="mini-card">
+        <span class="mini-kicker">Current release</span>
+        <strong>v1.2.4</strong>
+        <small>Production pipeline</small>
+      </div>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Operations Dashboard</p>
+          <h1>Deployment pipeline overview</h1>
+        </div>
+        <div class="status-pill">
+          <span class="pulse"></span>
+          Production Ready
+        </div>
+      </header>
+
+      <section id="subnavDetail" class="panel subnav-detail" aria-live="polite" hidden>
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Project detail</p>
+            <h2 id="subnavDetailTitle"></h2>
+          </div>
+          <button id="closeSubnavDetail" class="secondary-btn" type="button">Close</button>
+        </div>
+        <p id="subnavDetailSummary" class="subnav-detail-summary"></p>
+        <div id="subnavDetailGrid" class="subnav-detail-grid"></div>
+      </section>
+
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="label">Status</p>
+          <h2>Delivery pipeline with automated build, testing, and release orchestration.</h2>
+        </div>
+        <div class="action-group">
+          <button id="deployBtn" class="primary-btn" type="button">Deploy now</button>
+          <button id="reportBtn" class="ghost-btn" type="button">Generate report</button>
+        </div>
+        <p id="actionResult" class="action-result" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="project-summary">
+        <div class="summary-box">
+          <span>Project Health</span>
+          <strong>Excellent</strong>
+        </div>
+        <div class="summary-box">
+          <span>Release Risk</span>
+          <strong>Low</strong>
+        </div>
+        <div class="summary-box">
+          <span>Review Score</span>
+          <strong>92%</strong>
+        </div>
+      </section>
+
+      <section class="stats-grid">
+        <div class="stat-card">
+          <span>System</span>
+          <strong id="systemName">CI/CD Demo</strong>
+        </div>
+        <div class="stat-card">
+          <span>Environment</span>
+          <strong id="envName">Development</strong>
+        </div>
+        <div class="stat-card">
+          <span>Uptime</span>
+          <strong id="uptimeValue">--</strong>
+        </div>
+      </section>
+
+      <section class="main-grid">
+        <div class="panel wide-panel">
+          <div class="panel-header">
+            <h3>Pipeline Stages</h3>
+            <span class="pill">5 stages</span>
+          </div>
+          <div id="pipeline" class="pipeline"></div>
+        </div>
+
+        <div class="panel side-stack">
+          <div class="panel-header">
+            <h3>Application Info</h3>
+            <span class="pill live">Live</span>
+          </div>
+          <ul id="info" class="info-list"><li>Loading...</li></ul>
+        </div>
+      </section>
+
+      <section class="bottom-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Technology Stack</h3>
+          </div>
+          <ul class="feature-list">
+            <li>Node.js + Express</li>
+            <li>Dockerized delivery</li>
+            <li>GitHub Actions orchestration</li>
+          </ul>
+        </div>
+
+        <div class="panel review-panel">
+          <div class="panel-header">
+            <h3>Review Options</h3>
+            <span class="pill success">Checklist</span>
+          </div>
+          <div id="optionList" class="option-list"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Health Check</h3>
+          <span class="pill success">Status</span>
+        </div>
+        <button id="healthBtn" class="secondary-btn">Check /health</button>
+        <p id="healthResult" class="health-result">Awaiting verification...</p>
+      </section>
+    </main>
+  </div>
 
   <script src="script.js"></script>
 </body>
