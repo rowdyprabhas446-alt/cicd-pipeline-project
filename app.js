@@ -2,6 +2,7 @@
 const express = require('express');
 const os = require('os');
 const path = require('path');
+const crypto = require('crypto');
 const { MongoClient } = require('mongodb');
 
 const app = express();
@@ -179,6 +180,86 @@ app.post('/api/pipeline/status', async (req, res) => {
 
     res.status(503).json({
       error: 'Unable to save pipeline status to database'
+    });
+  }
+});
+
+// Trigger GitHub Actions deployment from the dashboard
+app.post('/api/deploy', async (req, res) => {
+  const expectedToken = process.env.DEPLOY_TRIGGER_TOKEN;
+
+  if (!expectedToken) {
+    return res.status(503).json({
+      error: 'Deployment access key is not configured'
+    });
+  }
+
+  const authHeader = req.get('Authorization') || '';
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  const suppliedToken = match ? match[1] : '';
+
+  const expectedBuffer = Buffer.from(expectedToken);
+  const suppliedBuffer = Buffer.from(suppliedToken);
+
+  const validToken =
+    suppliedBuffer.length === expectedBuffer.length &&
+    crypto.timingSafeEqual(suppliedBuffer, expectedBuffer);
+
+  if (!validToken) {
+    return res.status(401).json({
+      error: 'Invalid or missing deployment access key'
+    });
+  }
+
+  const githubToken = process.env.GITHUB_TOKEN;
+  const repository = process.env.GITHUB_REPOSITORY;
+  const branch = process.env.GITHUB_DEPLOY_BRANCH || 'main';
+  const workflowFile = process.env.GITHUB_WORKFLOW_FILE || 'ci.yml';
+
+  if (
+    !githubToken ||
+    !repository ||
+    !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)
+  ) {
+    return res.status(503).json({
+      error: 'GitHub deployment configuration is missing or invalid'
+    });
+  }
+
+  const dispatchUrl =
+    `https://api.github.com/repos/${repository}/actions/workflows/${encodeURIComponent(workflowFile)}/dispatches`;
+
+  try {
+    const githubResponse = await fetch(dispatchUrl, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${githubToken}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ ref: branch })
+    });
+
+    if (!githubResponse.ok) {
+      console.error(
+        'GitHub workflow dispatch failed:',
+        githubResponse.status
+      );
+
+      return res.status(502).json({
+        error: `GitHub workflow dispatch failed (HTTP ${githubResponse.status})`
+      });
+    }
+
+    return res.status(202).json({
+      message: `Deployment workflow started for ${branch}`
+    });
+  } catch (error) {
+    console.error('Deployment dispatch error:', error.message);
+
+    return res.status(502).json({
+      error: 'Unable to contact GitHub Actions'
     });
   }
 });
