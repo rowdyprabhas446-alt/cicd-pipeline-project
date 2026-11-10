@@ -75,7 +75,7 @@ app.get('/api/pipeline', async (req, res) => {
 
     res.json(document.stages);
   } catch (error) {
-    console.error('Failed to read pipeline status:', error.message);
+    console.error('Failed to read pipeline status:', error);
 
     res.status(503).json({
       error: 'Unable to read pipeline status from database'
@@ -150,7 +150,7 @@ app.post('/api/pipeline/status', async (req, res) => {
       stages: updatedStages
     });
   } catch (error) {
-    console.error('Failed to save pipeline status:', error.message);
+    console.error('Failed to read pipeline status:', error);
 
     res.status(503).json({
       error: 'Unable to save pipeline status to database'
